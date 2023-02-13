@@ -11,7 +11,7 @@ def createNotes(puzzle: list) -> dict:
                 notes[(x,y)] = singleSquareNote(x, y, puzzle)
     return notes
 
-#Generates the notes for a specific square, used in above function and also when pivoting on guess and check
+# Generates the notes for a specific square, used in above function and also when pivoting on guess and check
 def singleSquareNote(x, y: int, puzzle: list) -> list:
     potential = [1,2,3,4,5,6,7,8,9]  
     for trav in range(9):
@@ -29,6 +29,20 @@ def singleSquareNote(x, y: int, puzzle: list) -> list:
             potential.remove(sqr)
                 
     return potential
+
+# This functions will react to a single square being filled in and remove it's "presence" from the notes that associate with it
+def singleSquareRemoved(x, y, val: int, notes: dict):
+    for i in range(9):
+        if y != i and notes.get((x,i)) != None and val in notes[(x,i)]:
+            notes[(x,i)].remove(val)
+        if x != i and notes.get((i,y)) != None and val in notes[(i,y)]:
+            notes[(i,y)].remove(val)
+        xC, yC = 3*(x//3)+(i//3), 3*(y//3)+(i%3)
+        if xC != x and yC != y and notes.get((xC,yC)) != None and val in notes[(xC,yC)]:
+            notes[(xC,yC)].remove(val)
+    notes.pop((x,y))
+
+
 
 # Checks puzzle to see if it is valid and solved, ie the puzzle follows the rule of sudoku, a solved puzzle will output the following: True, 1
 def isValidPuzzle(puzzle: list) -> (bool, int):
@@ -67,7 +81,7 @@ def solve(puzzle: list):
     #print(notes)
 
     # Decisions will store tuples of data that represents filling in a specific sudoku square in the following form: (int nav, int val, [int]) 
-    # where the x,y represents the location, the value represents the value used and the integer list holds other potential values, it's empty if there are none
+    # where the nav represents both location and list size, the value represents the value used and the integer list holds other potential values, it's empty if there are none
     decisions = []
 
     # nav variable will be used to traverse locations when attempting to solve and will also determine the threshold for guess and check measures
@@ -76,21 +90,21 @@ def solve(puzzle: list):
     while True:
         x, y = (nav % 81) // 9, (nav % 81) % 9
         # Thought process below is that it will go through all 81 elements and check if there is a single number that must go there, then guess and check for two, then three, and so on.
-        if puzzle[x][y] == 0 and len(notes[(x,y)]) <= (nav // 81) + 1: 
+        if puzzle[x][y] == 0 and len(notes[(x,y)]) <= (nav // 81) + 1 and len(notes[(x,y)]) != 0: 
             values = notes[(x,y)]
             puzzle[x][y] = values[0]
+            singleSquareRemoved(x, y, values[0], notes)
             decisions.append((nav, values[0], values[1:]))
             nav = 0
         else:
             nav += 1
+            pass
 
         # This section will check to see if the puzzle is valid thus far (no repeats in row, col, or 3x3)
+        #printHelperV1(puzzle)
         valid, squares = isValidPuzzle(puzzle) 
         if not valid:
             while True:
-                if len(decisions) < 10:
-                    print(decisions)
-                # print(len(decisions))
                 xR, yR = (decisions[-1][0] % 81) // 9, (decisions[-1][0] % 81) % 9
                 if len(decisions[-1][2]) == 0:
                     # Resetting moves based on an incorrect guess
@@ -105,14 +119,24 @@ def solve(puzzle: list):
                     break
             # Only want to hard reset the notes if the puzzle is invalid and we have to retrace back to most recent guess
             createNotes(puzzle)
-
-        # Case in which the puzzle is fully solved, exit out of main solving loop
+        
+        # Case in which puzzle is valid and solved
         elif valid and squares == 0:
             print("Solved!")
             break
 
-
 def main():
+    blankPuzzle = [
+    [0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0]]
+
     puzzle1 = [
     [5,1,9,0,0,0,4,3,0],
     [7,2,4,9,0,0,0,0,0],
@@ -135,7 +159,18 @@ def main():
     [9,2,0,0,4,0,8,0,1],
     [0,7,0,0,0,1,0,5,6]]
 
-    hardPuzzle = [
+    puzzle3 = [
+    [0,3,8,0,6,0,4,1,0],
+    [0,0,0,4,7,0,0,2,0],
+    [2,0,9,0,0,0,0,6,0],
+    [0,0,5,8,0,2,3,9,0],
+    [0,0,0,0,0,4,1,0,7],
+    [9,1,0,3,5,0,2,0,0],
+    [8,9,4,0,0,5,6,7,0],
+    [5,0,7,0,4,6,8,0,0],
+    [0,0,3,0,0,0,5,0,9]]
+
+    hardPuzzle1 = [
     [8,0,0,0,0,0,0,7,0],
     [0,0,6,0,1,0,0,5,3],
     [0,4,0,6,0,0,0,0,0],
@@ -146,10 +181,20 @@ def main():
     [0,0,4,0,5,0,0,6,1],
     [9,0,0,0,0,2,0,0,0]]
 
-    printHelperV1(hardPuzzle)
-    solve(hardPuzzle)
-    printHelperV1(hardPuzzle)
+    hardPuzzle2 = [
+    [0,0,4,0,0,3,0,2,0],
+    [0,0,8,0,1,0,0,0,0],
+    [2,1,0,0,0,7,9,0,0],
+    [0,0,0,0,0,9,0,0,5],
+    [3,6,0,0,7,0,0,8,0],
+    [0,0,1,0,0,0,0,0,0],
+    [7,2,0,0,6,0,0,3,0],
+    [4,0,0,0,0,0,0,0,0],
+    [0,0,0,3,0,0,8,0,0]]
+    
+    printHelperV1(hardPuzzle2)
+    solve(hardPuzzle2)
+    printHelperV1(hardPuzzle2)
 
 
 main()
-
